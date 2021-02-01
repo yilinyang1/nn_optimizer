@@ -8,8 +8,10 @@ setup(
     url="https://github.com/yilinyang1/nn_optimizer",
     author="Yilin Yang",
     author_email="yiliny2@andrew.cmu.edu",
-    packages=find_packages(),
+    packages=['nn_optimizer', 'nn_optimizer.utils'],
     include_package_data=True,
-    install_requires=["ase"],
+    install_requires=["ase", "torch"],
     long_description="""NN active learning for molecular geometry optimization.""",
 )
+print(find_packages())
+
