@@ -9,6 +9,7 @@ setup(
     author="Yilin Yang",
     author_email="yiliny2@andrew.cmu.edu",
     packages=['nn_optimizer', 'nn_optimizer.utils'],
+    package_data={'nn_optimizer.utils': ['*.cpp', '*.so', '*.o', '*.h']},
     include_package_data=True,
     install_requires=["ase", "torch"],
     long_description="""NN active learning for molecular geometry optimization.""",
