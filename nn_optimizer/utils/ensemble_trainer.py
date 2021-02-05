@@ -10,13 +10,13 @@ from time import sleep
 
 
 class Ensemble_Trainer():
-    def __init__(self, train_db_path, model_path, fp_params, ensemble_size, nn_params, dask_params):
+    def __init__(self, train_db_path, model_path, fp_params, ensemble_size, nn_params, torch_client):
         self.model_path = model_path
         self.train_db_path = train_db_path
         self.ensemble_size = ensemble_size
         self.params_set = fp_params
         self.nn_params = nn_params
-        self.dask_params = dask_params
+        self.torch_client = torch_client
         if not os.path.isdir(model_path):
             os.mkdir(model_path)
         self.train_data = None
@@ -44,7 +44,7 @@ class Ensemble_Trainer():
         self.train_data = train_data
         self.valid_data = valid_data
 
-        if self.dask_params is None:  # train models sequentially 
+        if self.torch_client is None:  # train models sequentially 
             for m in range(self.ensemble_size):
                 self.train_nn(m)
         else:  # train models parallelly using dask
@@ -59,22 +59,13 @@ class Ensemble_Trainer():
                 agent.train(log_name=log_name, n_epoch=3000, interupt=True, val_interval=20, is_force=True, 
                             nrg_convg=2, force_convg=7, max_frs_convg=50, nrg_coef=1, force_coef=1)
                 return agent
-            cluster = KubeCluster.from_yaml(self.dask_params['torch_yaml'])
-            cluster.adapt(minimum=1, maximum=10)
-            client = Client(cluster)
-            sleep(10)
-            while len(cluster.observed) == 0:  # wait until the pods are successfully initialized
-                sleep(10)
             
             ids = list(np.arange(self.ensemble_size))
-            L = client.map(train_nn_dask, ids)
-            res_models = client.gather(L)
+            L = self.torch_client.map(train_nn_dask, ids)
+            res_models = self.torch_client.gather(L)
             for i in range(self.ensemble_size):
                 tmp_model_path = os.path.join(self.model_path, f'model-{i}.sav')
                 torch.save(res_models[i].state_dict(), tmp_model_path)
-            cluster.close()
-            sleep(30)
-
         return
 
 

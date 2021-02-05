@@ -8,14 +8,12 @@ from .utils.fp_calculator import set_sym
 from .utils.relax_helper import Relaxer_Helper
 from .utils.dask_calculator import compute_with_calc
 import numpy as np
-from dask_kubernetes import KubeCluster
-from dask.distributed import Client
 from time import sleep
 import copy
 
 
 class Ensemble_Relaxer():
-    def __init__(self, db, calculator, jobname, ensemble_size=10, alpha=2, nn_params=None, dask_params=None):
+    def __init__(self, db, calculator, jobname, ensemble_size=10, alpha=2, nn_params=None, vasp_client=None, torch_client=None):
         self.job_name = jobname
         self.job_path = f'./{self.job_name}'
         self.model_path = os.path.join(self.job_path, 'models')
@@ -35,7 +33,8 @@ class Ensemble_Relaxer():
         self.fp_params = self.__fp_setter()
         self.alpha = alpha
 
-        self.dask_params = dask_params
+        self.vasp_client = vasp_client
+        self.torch_client = torch_client
         
         if not nn_params:
             self.nn_params = {'layer_nodes': [50, 50], 'activations': ['tanh', 'tanh'], 'lr': 1}
@@ -104,7 +103,7 @@ class Ensemble_Relaxer():
         to_cal_db = connect(to_cal_db_path)
         caled_db = connect(caled_db_path)
 
-        if self.dask_params is None:
+        if self.vasp_client is None:
             for entry in to_cal_db.select():
                 atoms = entry.toatoms()
                 atoms.set_calculator(self.gt_calculator)
@@ -113,24 +112,14 @@ class Ensemble_Relaxer():
                 atoms.set_calculator(SPC(atoms, energy=nrg, forces=frs))
                 caled_db.write(atoms)
         else:
-            # start dask cluster
-            cluster = KubeCluster.from_yaml(self.dask_params['vasp_yaml'])
-            cluster.adapt(minimum=1, maximum=10)
-            client = Client(cluster)
-            sleep(10)
-            while len(cluster.observed) == 0:  # wait until the pods are successfully initialized
-                sleep(10)
             images = []
             for entry in to_cal_db.select():
                 atoms = entry.toatoms()
                 atoms.set_calculator(copy.deepcopy(self.gt_calculator))
                 images.append(atoms)
-            res_images = compute_with_calc(images)
+            res_images = compute_with_calc(self.vasp_client, images)
             for atoms in res_images:
                 caled_db.write(atoms)
-            
-            cluster.close()
-            sleep(30)
 
         print(f'Step {self.n_step}: groud truth data calculation done')
         self.log_file.write(f'Step {self.n_step}: groud truth data calculation done \n')
@@ -199,7 +188,7 @@ class Ensemble_Relaxer():
         train_db_path = os.path.join(self.traj_path, f'train-set-step{self.n_step}.db')
         step_model_path = os.path.join(self.model_path, f'model-step{self.n_step}')
         trainer = Ensemble_Trainer(train_db_path, step_model_path, self.fp_params, 
-                                    self.ensemble_size, self.nn_params, self.dask_params)
+                                    self.ensemble_size, self.nn_params, self.torch_client)
         trainer.calculate_fp()
         trainer.train_ensemble()
         print(f'Step {self.n_step}: training done')
