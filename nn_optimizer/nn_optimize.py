@@ -104,14 +104,6 @@ class Ensemble_Relaxer():
         to_cal_db = connect(to_cal_db_path)
         caled_db = connect(caled_db_path)
 
-        # start dask cluster
-        cluster = KubeCluster.from_yaml(self.dask_params['vasp_yaml'])
-        cluster.adapt(minimum=1, maximum=10)
-        client = Client(cluster)
-        sleep(10)
-        while len(cluster.observed) == 0:  # wait until the pods are successfully initialized
-            sleep(10)
-
         if self.dask_params is None:
             for entry in to_cal_db.select():
                 atoms = entry.toatoms()
@@ -121,6 +113,13 @@ class Ensemble_Relaxer():
                 atoms.set_calculator(SPC(atoms, energy=nrg, forces=frs))
                 caled_db.write(atoms)
             else:
+                # start dask cluster
+                cluster = KubeCluster.from_yaml(self.dask_params['vasp_yaml'])
+                cluster.adapt(minimum=1, maximum=10)
+                client = Client(cluster)
+                sleep(10)
+                while len(cluster.observed) == 0:  # wait until the pods are successfully initialized
+                    sleep(10)
                 images = []
                 for entry in to_cal_db.select():
                     atoms = entry.toatoms()
@@ -129,6 +128,9 @@ class Ensemble_Relaxer():
                 res_images = compute_with_calc(images)
                 for atoms in res_images:
                     caled_db.write(atoms)
+                
+                cluster.close()
+                sleep(30)
 
         print(f'Step {self.n_step}: groud truth data calculation done')
         self.log_file.write(f'Step {self.n_step}: groud truth data calculation done \n')
