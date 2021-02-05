@@ -3,10 +3,10 @@ import os
 import shutil
 from ase.db import connect
 from ase.calculators.singlepoint import SinglePointCalculator as SPC
-from utils.ensemble_trainer import Ensemble_Trainer
-from utils.fp_calculator import set_sym
-from utils.relax_helper import Relaxer_Helper
-from utils.dask_calculator import compute_with_calc
+from .utils.ensemble_trainer import Ensemble_Trainer
+from .utils.fp_calculator import set_sym
+from .utils.relax_helper import Relaxer_Helper
+from .utils.dask_calculator import compute_with_calc
 import numpy as np
 from dask_kubernetes import KubeCluster
 from dask.distributed import Client
