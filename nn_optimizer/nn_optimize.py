@@ -93,7 +93,7 @@ class Ensemble_Relaxer():
         return params_set
     
 
-    def __get_ground_truth(self):
+    def get_ground_truth(self):
         """
         Calculate the groud truth energetics for uncertain configurations.
         """
@@ -137,7 +137,7 @@ class Ensemble_Relaxer():
         return None
 
 
-    def __update_training_data(self):
+    def update_training_data(self):
         """
         Add calcualted ground truth data into training file
         Check the convergence of atoms configurations
@@ -190,7 +190,7 @@ class Ensemble_Relaxer():
             return False
 
 
-    def __train_NN(self):
+    def train_NN(self):
         """
         Retrain NN ensemble using updated training data
         """
@@ -207,7 +207,7 @@ class Ensemble_Relaxer():
         return
 
 
-    def __relax_NN(self):
+    def relax_NN(self):
         """
         Relax configurations using NN
         """
@@ -227,7 +227,7 @@ class Ensemble_Relaxer():
         return
 
     
-    def __collect_configs(self):
+    def collect_configs(self):
         """
         Collect final configurations after relaxation
         """
@@ -265,12 +265,12 @@ class Ensemble_Relaxer():
     def run(self, fmax=0.05, steps=None):
         self.fmax = fmax
         while steps and self.n_step <= steps:
-            self.__get_ground_truth()
-            if self.__update_training_data():
+            self.get_ground_truth()
+            if self.update_training_data():
                 self.n_step += 1
                 break
-            self.__train_NN()
-            self.__relax_NN()
+            self.train_NN()
+            self.relax_NN()
             self.n_step += 1
 
-        return self.__collect_configs()
+        return self.collect_configs()
