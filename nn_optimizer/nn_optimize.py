@@ -3,11 +3,10 @@ import os
 import shutil
 from ase.db import connect
 from ase.calculators.singlepoint import SinglePointCalculator as SPC
-from .utils.ensemble_trainer import Ensemble_Trainer, Test
-from .utils.fp_calculator import set_sym, db_to_fp
+from .utils.ensemble_trainer import Ensemble_Trainer
+from .utils.fp_calculator import set_sym
 from .utils.relax_helper import Relaxer_Helper
 from .utils.dask_calculator import compute_with_calc
-from .utils.train_agent import get_scaling
 import numpy as np
 from time import sleep
 import copy
@@ -182,49 +181,37 @@ class Ensemble_Relaxer():
             return False
 
 
-    # def train_NN(self):
-    #     """
-    #     Retrain NN ensemble using updated training data
-    #     """
-    #     print(f'Step {self.n_step}: start training')
-    #     self.log_file.write(f'Step {self.n_step}: start training \n')
-    #     train_db_path = os.path.join(self.traj_path, f'train-set-step{self.n_step}.db')
-    #     step_model_path = os.path.join(self.model_path, f'model-step{self.n_step}')
-    #     trainer = Ensemble_Trainer(train_db_path, step_model_path, self.fp_params, 
-    #                                 self.ensemble_size, self.nn_params, self.torch_client)
-    #     trainer.calculate_fp()
-    #     trainer.train_ensemble()
-    #     print(f'Step {self.n_step}: training done')
-    #     self.log_file.write(f'Step {self.n_step}: training done\n')
-    #     return
-
-
     def train_NN(self):
+        """
+        Retrain NN ensemble using updated training data
+        """
         print(f'Step {self.n_step}: start training')
         self.log_file.write(f'Step {self.n_step}: start training \n')
         train_db_path = os.path.join(self.traj_path, f'train-set-step{self.n_step}.db')
         step_model_path = os.path.join(self.model_path, f'model-step{self.n_step}')
-        if not os.path.isdir(step_model_path):
-            os.mkdir(step_model_path)
-        # calculate fp
-        train_db = connect(train_db_path)
-        train_data = db_to_fp(train_db, self.fp_params)
-        torch.save(train_data, os.path.join(step_model_path, 'train_set_data.sav'))
-        scale_file = os.path.join(step_model_path, 'train_set_scale.sav')
-        scale = get_scaling(train_data, add_const=1e-10)
-        torch.save(scale, scale_file)
-        trainer = Ensemble_Trainer(train_data, copy.deepcopy(train_data), step_model_path, self.fp_params, 
+        trainer = Ensemble_Trainer(train_db_path, step_model_path, self.fp_params, 
                                     self.ensemble_size, self.nn_params, self.torch_client)
+        trainer.calculate_fp()
         trainer.train_ensemble()
         print(f'Step {self.n_step}: training done')
         self.log_file.write(f'Step {self.n_step}: training done\n')
         return
-    
-    def testNN(self):
-        t = Test(self.torch_client)
-        print(t.test())
-        return
 
+
+    def update_trainer(self):
+        """
+        Update trainer for using dask in host
+        """
+        print(f'Step {self.n_step}: start training')
+        self.log_file.write(f'Step {self.n_step}: start training \n')
+        train_db_path = os.path.join(self.traj_path, f'train-set-step{self.n_step}.db')
+        step_model_path = os.path.join(self.model_path, f'model-step{self.n_step}')
+        trainer = Ensemble_Trainer(train_db_path, step_model_path, self.fp_params, 
+                                    self.ensemble_size, self.nn_params, self.torch_client)
+        trainer.calculate_fp()
+        self.trainer = trainer
+        return
+    
 
     def relax_NN(self):
         """
