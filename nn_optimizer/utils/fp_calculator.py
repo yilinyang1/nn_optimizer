@@ -356,7 +356,7 @@ def batch_to_fp(images, params_set):
 			b_e_mask[idx, atom_idx == ie, ie-1] = 1
 
 		b_e[idx] = image.get_potential_energy()
-		tmp_frs = np.array(entry.forces)
+		tmp_frs = np.array(image.get_forces())
 		b_f[idx][:len(image), :] = torch.FloatTensor(tmp_frs)
 		idx += 1
 
