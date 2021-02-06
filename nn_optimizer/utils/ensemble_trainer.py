@@ -32,9 +32,7 @@ class Ensemble_Trainer():
         torch.save(scale, scale_file)
         return
 
-    def train_nn_dask(self, m, train_data, valid_data):
-        layer_nodes = self.nn_params['layer_nodes']
-        activations = self.nn_params['activations']
+    def train_nn_dask(self, m, train_data, valid_data, layer_nodes, activations):
         lr = self.nn_params['lr']
         model_path = f'model-{m}.sav'
         log_name = f'log-{m}.txt'
@@ -59,7 +57,7 @@ class Ensemble_Trainer():
                 self.train_nn(m)
         else:  # train models parallelly using dask            
             ids = list(np.arange(self.ensemble_size))
-            args = [[m, train_data, valid_data] for m in ids]
+            args = [[m, train_data, valid_data, self.nn_params['layer_nodes'], self.nn_params['activations']] for m in ids]
             L = self.torch_client.map(self.train_nn_dask, *args)
             res_models = self.torch_client.gather(L)
             for i in range(self.ensemble_size):
