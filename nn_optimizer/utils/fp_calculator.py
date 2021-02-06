@@ -325,15 +325,15 @@ def cal_fp_only(atoms, elements, params_set):
 
 
 
-def batch_to_fp(batch, params_set):
+def batch_to_fp(images, params_set):
 	N_max = 0
-	N = len(batch)
+	N = len(images)
 	elements = [key for key in params_set.keys()]
 	n_features = len(params_set[elements[0]]['total'])
 
-	for image in batch:
-		if len(image) > N_max:
-			N_max = len(image)
+	for atoms in images:
+		if len(atoms.get_chemical_symbols()) > N_max:
+			N_max = len(atoms.get_chemical_symbols())
 
 	N_atoms = torch.zeros(N)
 	b_fp = torch.zeros((N, N_max, n_features))
@@ -344,7 +344,7 @@ def batch_to_fp(batch, params_set):
 
 	idx = 0
 
-	for image in batch:
+	for image in images:
 		N_atoms[idx] = len(image)
 		data = calculate_fp(image, elements, params_set)
 		atom_idx = np.zeros(N_max)
@@ -356,7 +356,8 @@ def batch_to_fp(batch, params_set):
 			b_e_mask[idx, atom_idx == ie, ie-1] = 1
 
 		b_e[idx] = image.get_potential_energy()
-		b_f[idx][:len(image), :] = torch.FloatTensor(image.get_forces())
+		tmp_frs = np.array(entry.forces)
+		b_f[idx][:len(image), :] = torch.FloatTensor(tmp_frs)
 		idx += 1
 
 

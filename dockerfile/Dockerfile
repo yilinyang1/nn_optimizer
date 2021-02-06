@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 SHELL ["/bin/bash", "-c"]
 
 # Set up a non-root user, `user`, with a group, `group`
