@@ -80,3 +80,13 @@ class Ensemble_Trainer():
                     nrg_convg=2, force_convg=7, max_frs_convg=50, nrg_coef=1, force_coef=1)
         return
     
+
+    def add(self, x, y):
+        return x + y
+
+
+    def test(self):
+        ids = [[1, 2], [3, 4]]
+        tmpL = self.torch_client.map(self.add, *ids)
+        tmpres = self.torch_client.gather(tmpL)
+        return tmpres
