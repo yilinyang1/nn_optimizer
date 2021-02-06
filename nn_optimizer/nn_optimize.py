@@ -3,7 +3,7 @@ import os
 import shutil
 from ase.db import connect
 from ase.calculators.singlepoint import SinglePointCalculator as SPC
-from .utils.ensemble_trainer import Ensemble_Trainer
+from .utils.ensemble_trainer import Ensemble_Trainer, Test
 from .utils.fp_calculator import set_sym, db_to_fp
 from .utils.relax_helper import Relaxer_Helper
 from .utils.dask_calculator import compute_with_calc
@@ -218,6 +218,11 @@ class Ensemble_Relaxer():
         trainer.train_ensemble()
         print(f'Step {self.n_step}: training done')
         self.log_file.write(f'Step {self.n_step}: training done\n')
+        return
+    
+    def testNN(self):
+        t = Test(self.torch_client)
+        print(t.test())
         return
 
 

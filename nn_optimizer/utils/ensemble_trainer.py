@@ -86,14 +86,14 @@ class Ensemble_Trainer():
 
 
 class Test:
-    def __init__(self):
-        pass
+    def __init__(self, client):
+        self.client = client
     
     def cal(self, x, y):
         return x + y
 
-    def test(self, client):
+    def test(self):
         ids = [[1, 2], [3, 4]]
-        L = client.map(self.cal, *ids)        
-        res = client.gather(L)
+        L = self.client.map(self.cal, *ids)        
+        res = self.client.gather(L)
         return res
