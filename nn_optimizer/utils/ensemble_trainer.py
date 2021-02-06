@@ -70,7 +70,7 @@ class Ensemble_Trainer():
                     nrg_convg=2, force_convg=7, max_frs_convg=50, nrg_coef=1, force_coef=1)
         return
     
-    
+
     def train_nn_dask(self, m):
         lr = self.nn_params['lr']
         model_path = f'model-{m}.sav'
@@ -82,3 +82,18 @@ class Ensemble_Trainer():
         agent.train(log_name=log_name, n_epoch=3000, interupt=True, val_interval=20, is_force=True, 
                     nrg_convg=2, force_convg=7, max_frs_convg=50, nrg_coef=1, force_coef=1)
         return agent.model
+
+
+
+class Test:
+    def __init__(self):
+        pass
+    
+    def cal(self, x, y):
+        return x + y
+
+    def test(self, client):
+        ids = [[1, 2], [3, 4]]
+        L = client.map(self.cal, *ids)        
+        res = client.gather(L)
+        return res

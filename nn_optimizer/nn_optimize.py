@@ -204,7 +204,8 @@ class Ensemble_Relaxer():
         self.log_file.write(f'Step {self.n_step}: start training \n')
         train_db_path = os.path.join(self.traj_path, f'train-set-step{self.n_step}.db')
         step_model_path = os.path.join(self.model_path, f'model-step{self.n_step}')
-
+        if not os.path.isdir(step_model_path):
+            os.mkdir(step_model_path)
         # calculate fp
         train_db = connect(train_db_path)
         train_data = db_to_fp(train_db, self.fp_params)
