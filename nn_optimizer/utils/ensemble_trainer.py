@@ -32,6 +32,18 @@ class Ensemble_Trainer():
         torch.save(scale, scale_file)
         return
 
+    def train_nn_dask(self, m, train_data, valid_data):
+        layer_nodes = self.nn_params['layer_nodes']
+        activations = self.nn_params['activations']
+        lr = self.nn_params['lr']
+        model_path = f'model-{m}.sav'
+        log_name = f'log-{m}.txt'
+        agent = Agent(train_data=train_data, valid_data=valid_data, model_path=model_path,
+                    layer_nodes=layer_nodes, activation=activations, lr=lr, scale_const=1.0)
+        agent.train(log_name=log_name, n_epoch=3000, interupt=True, val_interval=20, is_force=True, 
+                    nrg_convg=2, force_convg=7, max_frs_convg=50, nrg_coef=1, force_coef=1)
+        return agent.model
+
 
     def train_ensemble(self):
         data_set_path = os.path.join(self.model_path, 'train_set_data.sav')
@@ -45,21 +57,10 @@ class Ensemble_Trainer():
         if self.torch_client is None:  # train models sequentially 
             for m in range(self.ensemble_size):
                 self.train_nn(m)
-        else:  # train models parallelly using dask
-            def train_nn_dask(m):
-                layer_nodes = self.nn_params['layer_nodes']
-                activations = self.nn_params['activations']
-                lr = self.nn_params['lr']
-                model_path = f'model-{m}.sav'
-                log_name = f'log-{m}.txt'
-                agent = Agent(train_data=train_data, valid_data=valid_data, model_path=model_path,
-                            layer_nodes=layer_nodes, activation=activations, lr=lr, scale_const=1.0)
-                agent.train(log_name=log_name, n_epoch=3000, interupt=True, val_interval=20, is_force=True, 
-                            nrg_convg=2, force_convg=7, max_frs_convg=50, nrg_coef=1, force_coef=1)
-                return agent.model
-            
+        else:  # train models parallelly using dask            
             ids = list(np.arange(self.ensemble_size))
-            L = self.torch_client.map(train_nn_dask, ids)
+            args = [[m, train_data, valid_data] for m in ids]
+            L = self.torch_client.map(self.train_nn_dask, *args)
             res_models = self.torch_client.gather(L)
             for i in range(self.ensemble_size):
                 tmp_model_path = os.path.join(self.model_path, f'model-{i}.sav')
