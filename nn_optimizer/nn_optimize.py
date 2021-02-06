@@ -31,7 +31,7 @@ class Ensemble_Relaxer():
         self.n_step = 0
         self.ensemble_size = ensemble_size
         self.fmax = 0.05  # initial set
-        self.fp_params = self.__fp_setter()
+        self.fp_params, self.raw_fp_params = self.__fp_setter()
         self.alpha = alpha
 
         self.vasp_client = vasp_client
@@ -91,7 +91,9 @@ class Ensemble_Relaxer():
         cutoff = 6.0
         params_set = set_sym(self.elements, Gs, cutoff, g2_etas=g2_etas, g2_Rses=g2_Rses, 
                             g4_etas=g4_etas, g4_zetas=g4_zetas, g4_lambdas=g4_lambdas)
-        return params_set
+        fp_params = {'el': self.elements, 'gs': Gs, 'cutoff': cutoff, 'g2_etas': g2_etas, 'g2_Rses': g2_Rses, 
+                    'g4_etas': g4_etas, 'g4_zetas': g4_zetas, 'g4_lambdas': g4_lambdas}
+        return params_set, fp_params
     
 
     def get_ground_truth(self):
@@ -189,28 +191,29 @@ class Ensemble_Relaxer():
         self.log_file.write(f'Step {self.n_step}: start training \n')
         train_db_path = os.path.join(self.traj_path, f'train-set-step{self.n_step}.db')
         step_model_path = os.path.join(self.model_path, f'model-step{self.n_step}')
-        trainer = Ensemble_Trainer(train_db_path, step_model_path, self.fp_params, 
+        train_db = connect(train_db_path)
+        trainer = Ensemble_Trainer(train_db, step_model_path, self.raw_fp_params, 
                                     self.ensemble_size, self.nn_params, self.torch_client)
-        trainer.calculate_fp()
+        # trainer.calculate_fp()
         trainer.train_ensemble()
         print(f'Step {self.n_step}: training done')
         self.log_file.write(f'Step {self.n_step}: training done\n')
         return
 
 
-    def update_trainer(self):
-        """
-        Update trainer for using dask in host
-        """
-        print(f'Step {self.n_step}: start training')
-        self.log_file.write(f'Step {self.n_step}: start training \n')
-        train_db_path = os.path.join(self.traj_path, f'train-set-step{self.n_step}.db')
-        step_model_path = os.path.join(self.model_path, f'model-step{self.n_step}')
-        trainer = Ensemble_Trainer(train_db_path, step_model_path, self.fp_params, 
-                                    self.ensemble_size, self.nn_params, self.torch_client)
-        trainer.calculate_fp()
-        self.trainer = trainer
-        return
+    # def update_trainer(self):
+    #     """
+    #     Update trainer for using dask in host
+    #     """
+    #     print(f'Step {self.n_step}: start training')
+    #     self.log_file.write(f'Step {self.n_step}: start training \n')
+    #     train_db_path = os.path.join(self.traj_path, f'train-set-step{self.n_step}.db')
+    #     step_model_path = os.path.join(self.model_path, f'model-step{self.n_step}')
+    #     trainer = Ensemble_Trainer(train_db_path, step_model_path, self.fp_params, 
+    #                                 self.ensemble_size, self.nn_params, self.torch_client)
+    #     trainer.calculate_fp()
+    #     self.curr_trainer = trainer
+    #     return
     
 
     def relax_NN(self):
