@@ -4,6 +4,7 @@ from ase.calculators.emt import EMT
 import torch
 import numpy as np
 from copy import deepcopy
+from ase.calculators.singlepoint import SinglePointCalculator as SPC
 
 
 def calculate_atoms(atoms, model, scale, params_set, elements, is_force=True):
@@ -60,7 +61,7 @@ class NN_Calc_Ensemble(Calculator):
         Calculator.calculate(self, atoms, properties, system_changes)
 
         temp_atoms = self.atoms.copy()
-        temp_atoms.set_calculator(EMT())
+        temp_atoms.set_calculator(SPC(temp_atoms, energy=0.1, forces=np.zeros([len(temp_atoms), 3])))
         
         # calculate energy and forces
         nrg_preds = []

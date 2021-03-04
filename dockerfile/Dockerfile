@@ -20,7 +20,7 @@ RUN conda config --append channels matsci
 RUN conda install \
     python=3.6 \
     numpy=1.19.2 \
-    ase=3.19.1 \
+    ase=3.21.1 \
     cffi==1.14.4 \
     dask==2.30.0
 RUN conda clean -ity
