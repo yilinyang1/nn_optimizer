@@ -23,7 +23,7 @@ class Ensemble_Relaxer():
         self.log_file = open(os.path.join(self.job_path, 'relax_log.txt'), 'w')
 
         self.elements = self.__get_elements(db)
-        self.train_size = 50 if db.count() <= 10 else 5 * db.count()
+        self.train_size = max(15, 5 * db.count())
         self.constraints = [entry.toatoms().constraints for entry in db.select()]   
         self.relaxed = [False] * db.count()
 
